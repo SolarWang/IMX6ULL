@@ -1,0 +1,28 @@
+prefix := tpl
+src := scripts/basic #$(patsubst $(prefix)/%,%,$(obj))  #@solar:$(patsubst tpl/%,%,$(obj)),where $(obj) is passed by command
+ifeq ($(obj),$(src))
+prefix := spl
+src := $(patsubst $(prefix)/%,%,$(obj))  #@solar:$(patsubst tpl/%,%,$(obj))
+ifeq ($(obj),$(src))
+prefix := .
+endif
+endif
+
+obj = scripts/basic
+src = scripts/basic
+prefix := .
+
+
+kbuild-dir := $(if $(filter /%,scripts/basic),scripts/basic,./scripts/basic) #-> ./scripts/basic
+kbuild-file := $(if $(wildcard $(kbuild-dir)/Kbuild),$(kbuild-dir)/Kbuild,$(kbuild-dir)/Makefile) #->./scripts/basic/Makefile
+include ./scripts/basic/Makefile
+
+
+__build: $(if $(KBUILD_BUILTIN),$(builtin-target) $(lib-target) $(extra-y)) \
+	 $(if $(KBUILD_MODULES),$(obj-m) $(modorder-target)) \
+	 $(subdir-ym) $(always)
+	@:
+#	
+#	__build:$(builtin-target) $(lib-target) $(extra-y)) $(subdir-ym) $(always)
+#	@:
+#
