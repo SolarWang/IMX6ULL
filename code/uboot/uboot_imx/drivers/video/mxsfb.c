@@ -191,7 +191,7 @@ void *video_hw_init(void)
 {
 	int bpp = -1;
 	char *penv;
-	void *fb = NULL;
+	void *fb;
 	struct ctfb_res_modes mode;
 
 	puts("Video: ");
@@ -262,8 +262,7 @@ void *video_hw_init(void)
 
 	/* Allocate framebuffer */
 	fb = memalign(ARCH_DMA_MINALIGN,
-			roundup(panel.memSize, ARCH_DMA_MINALIGN));
-
+		      roundup(panel.memSize, ARCH_DMA_MINALIGN));
 	if (!fb) {
 		printf("MXSFB: Error allocating framebuffer!\n");
 		return NULL;

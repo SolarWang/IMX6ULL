@@ -29,13 +29,6 @@
 #endif
 #endif
 
-/* LED1 & LED2 configuration  */
-#define CONFIG_LED1_IOMUXC   MX6_PAD_GPIO1_IO03__GPIO1_IO03
-#define CONFIG_LED2_IOMUXC   MX6_PAD_GPIO1_IO04__GPIO1_IO04
-#define CONFIG_LED1          IMX_GPIO_NR(1, 3)
-#define CONFIG_LED2          IMX_GPIO_NR(1, 4)
-
-
 #define is_mx6ul_9x9_evk()	CONFIG_IS_ENABLED(TARGET_MX6UL_9X9_EVK)
 
 #ifdef CONFIG_TARGET_MX6UL_9X9_EVK
@@ -100,7 +93,7 @@
 #define CONFIG_SYS_MMC_IMG_LOAD_PART	1
 
 #ifdef CONFIG_SYS_BOOT_NAND
-#define CONFIG_MFG_NAND_PARTITION "mtdparts=gpmi-nand:4m(u-boot),1m(env),2m(logo),3m(dtb),10m(kernel),-(rootfs) "
+#define CONFIG_MFG_NAND_PARTITION "mtdparts=gpmi-nand:64m(boot),16m(kernel),16m(dtb),1m(misc),-(rootfs) "
 #else
 #define CONFIG_MFG_NAND_PARTITION ""
 #endif
@@ -127,16 +120,12 @@
 	"fdt_addr=0x83000000\0" \
 	"fdt_high=0xffffffff\0"	  \
 	"console=ttymxc0\0" \
-	"splashimage=0x88000000\0" \
-	"splashpos=0,0\0" \
-	"logo_offset=0x500000\0" \
-	"logo_size=0x100000\0" \
-	"bootargs=console=ttymxc0,115200 ubi.mtd=5 "  \
+	"bootargs=console=ttymxc0,115200 ubi.mtd=4 "  \
 		"root=ubi0:rootfs rootfstype=ubifs "		     \
 		CONFIG_BOOTARGS_CMA_SIZE \
-		"mtdparts=gpmi-nand:4m(u-boot),1m(env),2m(logo),3m(dtb),10m(kernel),-(rootfs)\0"\
-	"bootcmd=nand read ${loadaddr} 0xa00000 0x800000;"\
-		"nand read ${fdt_addr} 0x700000 0x100000;"\
+		"mtdparts=gpmi-nand:64m(boot),16m(kernel),16m(dtb),1m(misc),-(rootfs)\0"\
+	"bootcmd=nand read ${loadaddr} 0x4000000 0x800000;"\
+		"nand read ${fdt_addr} 0x5000000 0x100000;"\
 		"bootz ${loadaddr} - ${fdt_addr}\0"
 
 #else
@@ -152,9 +141,6 @@
 	"boot_fdt=try\0" \
 	"ip_dyn=yes\0" \
 	"panel=TFT43AB\0" \
-	"splashimage=0x88000000\0" \
-	"splashpos=0,0\0" \
-	"logo_file=alientek.bmp\0" \
 	"mmcdev="__stringify(CONFIG_SYS_MMC_ENV_DEV)"\0" \
 	"mmcpart=" __stringify(CONFIG_SYS_MMC_IMG_LOAD_PART) "\0" \
 	"mmcroot=" CONFIG_MMCROOT " rootwait rw\0" \
@@ -319,7 +305,7 @@
 #define CONFIG_ENV_SPI_MAX_HZ		CONFIG_SF_DEFAULT_SPEED
 #elif defined(CONFIG_ENV_IS_IN_NAND)
 #undef CONFIG_ENV_SIZE
-#define CONFIG_ENV_OFFSET		SZ_4M
+#define CONFIG_ENV_OFFSET		(60 << 20)
 #define CONFIG_ENV_SECT_SIZE		(128 << 10)
 #define CONFIG_ENV_SIZE			CONFIG_ENV_SECT_SIZE
 #endif

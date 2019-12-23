@@ -93,9 +93,6 @@ DECLARE_GLOBAL_DATA_PTR;
 #define IOX_SHCP IMX_GPIO_NR(5, 11)
 #define IOX_OE IMX_GPIO_NR(5, 8)
 
-#define ENET1_RESET IMX_GPIO_NR(5, 7)
-#define ENET2_RESET IMX_GPIO_NR(5, 8)
-
 static iomux_v3_cfg_t const iox_pads[] = {
 	/* IOX_SDI */
 	MX6_PAD_BOOT_MODE0__GPIO5_IO10 | MUX_PAD_CTRL(NO_PAD_CTRL),
@@ -347,6 +344,8 @@ static iomux_v3_cfg_t const usdhc1_pads[] = {
 	MX6_PAD_GPIO1_IO05__USDHC1_VSELECT | MUX_PAD_CTRL(USDHC_PAD_CTRL),
 	/* CD */
 	MX6_PAD_UART1_RTS_B__GPIO1_IO19 | MUX_PAD_CTRL(NO_PAD_CTRL),
+	/* RST_B */
+	MX6_PAD_GPIO1_IO09__GPIO1_IO09 | MUX_PAD_CTRL(NO_PAD_CTRL),
 };
 
 /*
@@ -522,6 +521,10 @@ int board_mmc_init(bd_t *bis)
 				usdhc1_pads, ARRAY_SIZE(usdhc1_pads));
 			gpio_direction_input(USDHC1_CD_GPIO);
 			usdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_ESDHC_CLK);
+
+			gpio_direction_output(USDHC1_PWR_GPIO, 0);
+			udelay(500);
+			gpio_direction_output(USDHC1_PWR_GPIO, 1);
 			break;
 		case 1:
 #if defined(CONFIG_MX6ULL_EVK_EMMC_REWORK)
@@ -645,7 +648,6 @@ static iomux_v3_cfg_t const fec1_pads[] = {
 	MX6_PAD_ENET1_RX_DATA1__ENET1_RDATA01 | MUX_PAD_CTRL(ENET_PAD_CTRL),
 	MX6_PAD_ENET1_RX_ER__ENET1_RX_ER | MUX_PAD_CTRL(ENET_PAD_CTRL),
 	MX6_PAD_ENET1_RX_EN__ENET1_RX_EN | MUX_PAD_CTRL(ENET_PAD_CTRL),
-	MX6_PAD_SNVS_TAMPER7__GPIO5_IO07 | MUX_PAD_CTRL(NO_PAD_CTRL),		/* ETH1 RESET PIN */
 };
 
 static iomux_v3_cfg_t const fec2_pads[] = {
@@ -661,26 +663,16 @@ static iomux_v3_cfg_t const fec2_pads[] = {
 	MX6_PAD_ENET2_RX_DATA1__ENET2_RDATA01 | MUX_PAD_CTRL(ENET_PAD_CTRL),
 	MX6_PAD_ENET2_RX_EN__ENET2_RX_EN | MUX_PAD_CTRL(ENET_PAD_CTRL),
 	MX6_PAD_ENET2_RX_ER__ENET2_RX_ER | MUX_PAD_CTRL(ENET_PAD_CTRL),
-	MX6_PAD_SNVS_TAMPER8__GPIO5_IO08 | MUX_PAD_CTRL(NO_PAD_CTRL),		/* ETH2 RESET PIN */
 };
 
 static void setup_iomux_fec(int fec_id)
 {
-	if (fec_id == 0){
+	if (fec_id == 0)
 		imx_iomux_v3_setup_multiple_pads(fec1_pads,
 						 ARRAY_SIZE(fec1_pads));
-        gpio_direction_output(ENET1_RESET, 1);
-        gpio_set_value(ENET1_RESET, 0);
-	mdelay(20);
-        gpio_set_value(ENET1_RESET, 1);
-	} else {
+	else
 		imx_iomux_v3_setup_multiple_pads(fec2_pads,
 						 ARRAY_SIZE(fec2_pads));
-        gpio_direction_output(ENET2_RESET, 1);
-        gpio_set_value(ENET2_RESET, 0);
-	mdelay(20);
-        gpio_set_value(ENET2_RESET, 1);
-	}
 }
 
 int board_eth_init(bd_t *bis)
@@ -776,113 +768,23 @@ void do_enable_parallel_lcd(struct display_info_t const *dev)
 
 	imx_iomux_v3_setup_multiple_pads(lcd_pads, ARRAY_SIZE(lcd_pads));
 
-       /*
-        * ATK Board: LCD reset without pin control
-        * GPIO5_9 is the touch screen reset pin
-        * controlled by the kernel driver.
-        */
+	/* Reset the LCD */
+	gpio_direction_output(IMX_GPIO_NR(5, 9) , 0);
+	udelay(500);
+	gpio_direction_output(IMX_GPIO_NR(5, 9) , 1);
 
 	/* Set Brightness to high */
 	gpio_direction_output(IMX_GPIO_NR(1, 8) , 1);
 }
 
-struct display_info_t const displays[] = {
-       {
+struct display_info_t const displays[] = {{
 	.bus = MX6UL_LCDIF1_BASE_ADDR,
 	.addr = 0,
 	.pixfmt = 24,
 	.detect = NULL,
 	.enable	= do_enable_parallel_lcd,
 	.mode	= {
-		.name           = "ATK-LCD-10.1-1280x800",
-		.xres           = 1280,
-		.yres           = 800,
-		.pixclock       = 27123,
-		.left_margin    = 70,
-		.right_margin   = 80,
-		.upper_margin   = 10,
-		.lower_margin   = 10,
-		.hsync_len      = 10,
-		.vsync_len      = 3,
-		.sync           = 0,
-		.vmode          = FB_VMODE_NONINTERLACED
-               }
-       },
-
-       {
-	.bus = MX6UL_LCDIF1_BASE_ADDR,
-	.addr = 0,
-	.pixfmt = 24,
-	.detect = NULL,
-	.enable = do_enable_parallel_lcd,
-	.mode   = {
-		.name           = "ATK-LCD-7-1024x600",
-		.xres           = 1024,
-		.yres           = 600,
-		.pixclock       = 19531,
-		.left_margin    = 100,
-		.right_margin   = 88,
-		.upper_margin   = 39,
-		.lower_margin   = 21,
-		.hsync_len      = 48,
-		.vsync_len      = 3,
-		.sync           = 0,
-		.vmode          = FB_VMODE_NONINTERLACED
-               }
-       },
-
-       {
-	.bus = MX6UL_LCDIF1_BASE_ADDR,
-	.addr = 0,
-	.pixfmt = 24,
-	.detect = NULL,
-	.enable = do_enable_parallel_lcd,
-	.mode   = {
-		.name           = "ATK-LCD-7-800x480",
-		.xres           = 800,
-		.yres           = 480,
-		.pixclock       = 10119,
-		.left_margin    = 210,
-		.right_margin   = 46,
-		.upper_margin   = 22,
-		.lower_margin   = 23,
-		.hsync_len      = 20,
-		.vsync_len      = 3,
-		.sync           = 1,
-		.vmode          = FB_VMODE_NONINTERLACED
-               }
-       },
-
-       {
-        .bus = MX6UL_LCDIF1_BASE_ADDR,
-        .addr = 0,
-        .pixfmt = 24,
-        .detect = NULL,
-        .enable = do_enable_parallel_lcd,
-        .mode   = {
-                .name           = "ATK-LCD-4.3-800x480",
-                .xres           = 800,
-                .yres           = 480,
-                .pixclock       = 10119,
-                .left_margin    = 210,
-                .right_margin   = 46,
-                .upper_margin   = 22,
-                .lower_margin   = 23,
-                .hsync_len      = 20,
-                .vsync_len      = 3,
-                .sync           = 0,
-                .vmode          = FB_VMODE_NONINTERLACED
-               }
-       },
-
-       {
-	.bus = MX6UL_LCDIF1_BASE_ADDR,
-	.addr = 0,
-	.pixfmt = 24,
-	.detect = NULL,
-	.enable = do_enable_parallel_lcd,
-	.mode   = {
-		.name           = "ATK-LCD-4.3-480x272",
+		.name			= "TFT43AB",
 		.xres           = 480,
 		.yres           = 272,
 		.pixclock       = 108695,
@@ -894,9 +796,7 @@ struct display_info_t const displays[] = {
 		.vsync_len      = 10,
 		.sync           = 0,
 		.vmode          = FB_VMODE_NONINTERLACED
-               }
-       }
-};
+} } };
 size_t display_count = ARRAY_SIZE(displays);
 #endif
 
@@ -907,159 +807,12 @@ int board_early_init_f(void)
 	return 0;
 }
 
-static iomux_v3_cfg_t const lcd_id_pads[] = {
-	MX6_PAD_LCD_DATA23__GPIO3_IO28 | MUX_PAD_CTRL(NO_PAD_CTRL),  /* lcd_r7 */
-	MX6_PAD_LCD_DATA15__GPIO3_IO20 | MUX_PAD_CTRL(NO_PAD_CTRL),  /* lcd_g7 */
-	MX6_PAD_LCD_DATA07__GPIO3_IO12 | MUX_PAD_CTRL(NO_PAD_CTRL),  /* lcd_b7 */
-	MX6_PAD_LCD_VSYNC__GPIO3_IO03 | MUX_PAD_CTRL(NO_PAD_CTRL),  /* bootcfg signal isolation */
-};
-
-void select_display_dev (void) {
-	int idcode;
-
-	/* IOMUXC init */
-	imx_iomux_v3_setup_multiple_pads(lcd_id_pads, ARRAY_SIZE(lcd_id_pads));
-
-	/* gpio init */
-	gpio_direction_output(IMX_GPIO_NR(3, 3), 1);  /* Enable connector */
-	gpio_direction_input(IMX_GPIO_NR(3, 28));
-	gpio_direction_input(IMX_GPIO_NR(3, 20));
-	gpio_direction_input(IMX_GPIO_NR(3, 12));
-
-	idcode = ((gpio_get_value(IMX_GPIO_NR(3, 28)) << 2) |
-		  (gpio_get_value(IMX_GPIO_NR(3, 20)) << 1) |
-		  (gpio_get_value(IMX_GPIO_NR(3, 12)))) & 0x7U;
-
-	switch (idcode) {
-#ifdef CONFIG_ENV_IS_IN_NAND
-		case CONFIG_ATKLCD_10_1_1280x800: /* 5 */
-			setenv("fdt_offset","0x5a0000");
-			setenv("panel","ATK-LCD-10.1-1280x800");
-		break;
-
-		case CONFIG_ATKLCD_7_1024x600: /* 2 */
-			setenv("fdt_offset","0x580000");
-			setenv("panel","ATK-LCD-7-1024x600");
-		break;
-
-		case CONFIG_ATKLCD_7_800x480: /* 4 */
-			setenv("fdt_offset","0x560000");
-			setenv("panel","ATK-LCD-7-800x480");
-		break;
-
-                case CONFIG_ATKLCD_4_3_800x480: /* 1 */
-                        setenv("fdt_offset","0x540000");
-                        setenv("panel","ATK-LCD-4.3-800x480");
-                break;
-
-		case CONFIG_ATKLCD_4_3_480x272: /* 0 */
-			setenv("fdt_offset","0x520000");
-			setenv("panel","ATK-LCD-4.3-480x272");
-		break;
-
-		default:
-			printf("*** This LCD id does not exist! Use the default LCD. ***\n");
-                        setenv("fdt_offset","0x560000");
-                        setenv("panel","ATK-LCD-7-800x480");
-		break;
-
-#elif CONFIG_SYS_BOOT_SD
-                case CONFIG_ATKLCD_10_1_1280x800: /* 5 */
-                        setenv("fdt_file","imx6ull-14x14-nand-10.1-1280x800-c.dtb");
-                        setenv("panel","ATK-LCD-10.1-1280x800");
-                break;
-
-                case CONFIG_ATKLCD_7_1024x600: /* 2 */
-                        setenv("fdt_file","imx6ull-14x14-nand-7-1024x600-c.dtb");
-                        setenv("panel","ATK-LCD-7-1024x600");
-                break;
-
-                case CONFIG_ATKLCD_7_800x480: /* 4 */
-                        setenv("fdt_file","imx6ull-14x14-nand-7-800x480-c.dtb");
-                        setenv("panel","ATK-LCD-7-800x480");
-                break;
-
-                case CONFIG_ATKLCD_4_3_800x480: /* 1 */
-                        setenv("fdt_file","imx6ull-14x14-nand-4.3-800x480-c.dtb");
-                        setenv("panel","ATK-LCD-4.3-800x480");
-                break;
-
-                case CONFIG_ATKLCD_4_3_480x272: /* 0 */
-                        setenv("fdt_file","imx6ull-14x14-nand-4.3-480x272-c.dtb");
-                        setenv("panel","ATK-LCD-4.3-480x272");
-                break;
-
-                default:
-                        printf("*** This LCD id does not exist! Use the default LCD. ***\n");
-                        setenv("fdt_file","imx6ull-14x14-nand-7-800x480-c.dtb");
-                        setenv("panel","ATK-LCD-7-800x480");
-                break;
-#else
-                case CONFIG_ATKLCD_10_1_1280x800: /* 5 */
-                        setenv("fdt_file","imx6ull-14x14-emmc-10.1-1280x800-c.dtb");
-                        setenv("panel","ATK-LCD-10.1-1280x800");
-                break;
-
-                case CONFIG_ATKLCD_7_1024x600: /* 2 */
-                        setenv("fdt_file","imx6ull-14x14-emmc-7-1024x600-c.dtb");
-                        setenv("panel","ATK-LCD-7-1024x600");
-                break;
-
-                case CONFIG_ATKLCD_7_800x480: /* 4 */
-                        setenv("fdt_file","imx6ull-14x14-emmc-7-800x480-c.dtb");
-                        setenv("panel","ATK-LCD-7-800x480");
-                break;
-
-                case CONFIG_ATKLCD_4_3_800x480: /* 1 */
-                        setenv("fdt_file","imx6ull-14x14-emmc-4.3-800x480-c.dtb");
-                        setenv("panel","ATK-LCD-4.3-800x480");
-                break;
-
-                case CONFIG_ATKLCD_4_3_480x272: /* 0 */
-                        setenv("fdt_file","imx6ull-14x14-emmc-4.3-480x272-c.dtb");
-                        setenv("panel","ATK-LCD-4.3-480x272");
-                break;
-
-                default:
-                        printf("*** This LCD id does not exist! Use the default LCD. ***\n");
-                        setenv("fdt_file","imx6ull-14x14-emmc-7-800x480-c.dtb");
-                        setenv("panel","ATK-LCD-7-800x480");
-                break;
-#endif
-	}
-}
-
-static iomux_v3_cfg_t const leds_pads[] = {
-	CONFIG_LED1_IOMUXC | MUX_PAD_CTRL(NO_PAD_CTRL),
-	CONFIG_LED2_IOMUXC | MUX_PAD_CTRL(NO_PAD_CTRL),
-};
-
-static iomux_v3_cfg_t const ts_int_pads[] = {
-	MX6_PAD_GPIO1_IO09__GPIO1_IO09 | MUX_PAD_CTRL(NO_PAD_CTRL),
-};
-
-int imx6_light_up_led1 (void) {
-	gpio_direction_output(CONFIG_LED1, 0);
-	return 0;
-}
-
-int imx6_light_up_led2 (void) {
-	gpio_direction_output(CONFIG_LED2, 0);
-	return 0;
-}
-
 int board_init(void)
 {
 	/* Address of boot parameters */
 	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
 
-	imx_iomux_v3_setup_multiple_pads(leds_pads, ARRAY_SIZE(leds_pads));
-
 	imx_iomux_v3_setup_multiple_pads(iox_pads, ARRAY_SIZE(iox_pads));
-
-	/* Set the touch screen interrupt pin to input mode */
-	imx_iomux_v3_setup_multiple_pads(ts_int_pads, ARRAY_SIZE(ts_int_pads));
-	gpio_direction_input(IMX_GPIO_NR(1, 9));
 
 	iox74lv_init();
 

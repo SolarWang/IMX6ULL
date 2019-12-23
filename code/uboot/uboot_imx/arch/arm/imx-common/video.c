@@ -8,18 +8,12 @@
 #include <asm/errno.h>
 #include <asm/imx-common/video.h>
 
-extern void select_display_dev (void);
-
 int board_video_skip(void)
 {
 	int i;
 	int ret;
-	char const *panel;
+	char const *panel = getenv("panel");
 
-	/* Select LCD configuration based on current hardware ID */
-	select_display_dev();
-
-	panel = getenv("panel");
 	if (!panel) {
 		for (i = 0; i < display_count; i++) {
 			struct display_info_t const *dev = displays+i;

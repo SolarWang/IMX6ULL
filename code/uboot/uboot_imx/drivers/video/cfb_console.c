@@ -204,8 +204,6 @@
 #endif
 void console_cursor(int state);
 
-extern int do_nand(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]);
-
 #define CURSOR_ON  console_cursor(1)
 #define CURSOR_OFF console_cursor(0)
 #define CURSOR_SET video_set_cursor()
@@ -1941,24 +1939,7 @@ static void *video_logo(void)
 	splash_get_pos(&video_logo_xpos, &video_logo_ypos);
 
 #ifdef CONFIG_SPLASH_SCREEN
-
 	s = getenv("splashimage");
-
-#if defined(CONFIG_ENV_IS_IN_MMC)
-extern int mmc_get_env_dev(void);
-	char mmc_part[20] = {0};
-	sprintf(mmc_part, "%d:%d", mmc_get_env_dev(), 1);
-	char *argv[5] = {
-	"fatload", "mmc", mmc_part, s, getenv("logo_file")};
-
-	do_fat_fsload(NULL, 0, 5, argv);
-#elif defined(CONFIG_ENV_IS_IN_NAND)
-	char *argv[5] = {
-	"nand", "read", s, getenv("logo_offset"), getenv("logo_size")};
-
-	do_nand(NULL, 0, 5, argv);
-#endif
-
 	if (s != NULL) {
 		splash_screen_prepare();
 		addr = simple_strtoul(s, NULL, 16);

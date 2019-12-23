@@ -8,19 +8,6 @@
 #ifndef __MX6_COMMON_H
 #define __MX6_COMMON_H
 
-/* LED1 & LED2 configuration  */
-#define CONFIG_LED1_IOMUXC   MX6_PAD_GPIO1_IO03__GPIO1_IO03
-#define CONFIG_LED2_IOMUXC   MX6_PAD_GPIO1_IO04__GPIO1_IO04
-#define CONFIG_LED1          IMX_GPIO_NR(1, 3)
-#define CONFIG_LED2          IMX_GPIO_NR(1, 4)
-
-/* ALIENTEK LCD configuration number */
-#define CONFIG_ATKLCD_10_1_1280x800           	5
-#define CONFIG_ATKLCD_7_1024x600           	2
-#define CONFIG_ATKLCD_7_800x480            	4
-#define CONFIG_ATKLCD_4_3_800x480		1
-#define CONFIG_ATKLCD_4_3_480x272            	0
-
 #ifndef CONFIG_MX6UL
 #define CONFIG_ARM_ERRATA_743622
 #if (defined(CONFIG_MX6QP) || defined(CONFIG_MX6Q) ||\

@@ -814,27 +814,10 @@ int board_early_init_f(void)
 	return 0;
 }
 
-static iomux_v3_cfg_t const leds_pads[] = {
-	CONFIG_LED1_IOMUXC | MUX_PAD_CTRL(NO_PAD_CTRL),
-	CONFIG_LED2_IOMUXC | MUX_PAD_CTRL(NO_PAD_CTRL),
-};
-
-int imx6_light_up_led1 (void) {
-	gpio_direction_output(CONFIG_LED1, 0);
-	return 0;
-}
-
-int imx6_light_up_led2 (void) {
-	gpio_direction_output(CONFIG_LED2, 0);
-	return 0;
-}
-
 int board_init(void)
 {
 	/* Address of boot parameters */
 	gd->bd->bi_boot_params = PHYS_SDRAM + 0x100;
-
-	imx_iomux_v3_setup_multiple_pads(leds_pads, ARRAY_SIZE(leds_pads));
 
 	imx_iomux_v3_setup_multiple_pads(iox_pads, ARRAY_SIZE(iox_pads));
 
