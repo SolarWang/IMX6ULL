@@ -16,7 +16,7 @@ prefix := .
 endif
 endif
 
-PHONY := __build
+PHONY := __buildqian'ru'sh
 __build:
 
 # Init all relevant variables used in kbuild files so
